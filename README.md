@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LeadGen — AI Lead Intelligence for Polish B2B
 
-## Getting Started
+> On-demand company analysis by NIP + daily radar of buying signals from Polish business news. AI-scored for B2B corporate gifting potential.
 
-First, run the development server:
+**[Live Demo](https://leadgen-pl.vercel.app/)** · Built by [@giviupl](https://github.com/giviupl)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+![LeadGen analyzer screenshot](./public/screenshot.png)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Two modes
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**🔍 Analyzer** — enter a NIP → registry data, AI scoring 1-10, budget estimates, gift brand recommendations, and a sales elevator pitch. ~6s end-to-end.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**📡 Radar** *(in progress)* — daily cron scans Bankier, Money, Strefa Biznesu for buying triggers (new contracts, expansion, IPO, hiring sprees, revenue records). Each hot company runs through the analyzer pipeline. Morning brief: 5–15 ranked leads with signal context and elevator pitch.
 
-## Learn More
+## Stack
 
-To learn more about Next.js, take a look at the following resources:
+Next.js 16 · React 19 · TypeScript · Tailwind v4 · **n8n** on Railway · **Supabase** PostgreSQL · **Gemini 2.5 Flash** (JSON mode) · Vercel + Railway
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Architecture
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+[User form]  OR  [Vercel cron]
+↓               ↓
+└→ [n8n webhook] ←┘
+↓
+Fetch data → Gemini → Supabase → Response
+↓
+[Analyzer UI]  OR  [Radar feed]
 
-## Deploy on Vercel
+Adapter pattern isolates the data source — swapping placeholder for REGON BIR SOAP touches one node, the rest stays untouched. Both modes share the same enrichment pipeline.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Key decisions
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **n8n over code** — visual workflow as documentation; retries + persistence + telemetry built-in
+- **Server Components only for DB access** — service_role key never reaches the client
+- **Idempotent writes** — PostgREST merge-duplicates handles re-analysis safely
+- **Gemini Flash** — free tier covers production demo, JSON mode for structured output
+
+## Roadmap
+
+- [x] Phase 1 — Analyzer end-to-end + history + per-company detail
+- [ ] Phase 2 — REGON BIR SOAP (awaiting GUS production key)
+- [ ] Phase 3 — Financial data (Biznesradar GPW + eKRS RDF private companies)
+- [ ] Phase 4 — Smart contact discovery (Google → real LinkedIn profiles, not search URLs)
+- [ ] **Phase 5 — Radar: daily news scanning + signal detection + morning brief**
+- [ ] Phase 6 — Industry discovery (search by PKD/region)
+
+---
+
+*Portfolio piece demonstrating AI Builder workflow — leveraging Claude Opus 4.7 to deliver production-grade AI systems.*
