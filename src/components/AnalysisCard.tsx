@@ -45,6 +45,23 @@ export function AnalysisCard({
             <div className="flex justify-between gap-4"><dt className="text-text-muted">PKD</dt><dd className="text-right">{company.pkd}</dd></div>
             <div className="flex justify-between gap-4"><dt className="text-text-muted">Kapitał zakł.</dt><dd>{company.kapital_zakladowy.toLocaleString('pl-PL')} PLN</dd></div>
             <div className="flex justify-between gap-4"><dt className="text-text-muted">Rejestracja</dt><dd>{company.data_rejestracji}</dd></div>
+            <div className="flex justify-between gap-4 items-center pt-2 mt-2 border-t border-bg-border">
+              <dt className="text-text-muted">VAT EU</dt>
+              <dd>
+                {company.vat_eu_active === true && (
+                  <span className="inline-flex items-center gap-1.5 text-success">
+                    <span className="w-2 h-2 bg-success rounded-full"></span>
+                    Aktywny
+                  </span>
+                )}
+                {company.vat_eu_active === false && (
+                  <span className="text-text-muted">Nieaktywny</span>
+                )}
+                {company.vat_eu_active === undefined && (
+                  <span className="text-text-muted">—</span>
+                )}
+              </dd>
+            </div>
           </dl>
         </div>
 

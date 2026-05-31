@@ -12,6 +12,7 @@ export type CompanyData = {
   kapital_zakladowy: number;
   zarzad: Array<{ imie: string; nazwisko: string; stanowisko: string }>;
   source: string;
+  vat_eu_active?: boolean;  // ← NOWE
 };
 
 export type IndustryProfile = {
