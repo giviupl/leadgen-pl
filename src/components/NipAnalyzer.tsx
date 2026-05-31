@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { AnalysisResponse } from '@/types';
+import { AnalysisCard } from './AnalysisCard';
 
 export function NipAnalyzer() {
   const [nip, setNip] = useState('');
@@ -37,13 +38,6 @@ export function NipAnalyzer() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const scoreColor = (score: number) => {
-    if (score >= 9) return 'text-success';
-    if (score >= 7) return 'text-success';
-    if (score >= 5) return 'text-warning';
-    return 'text-danger';
   };
 
   return (
@@ -85,178 +79,7 @@ export function NipAnalyzer() {
       )}
 
       {/* Wynik */}
-      {result && (
-        <div className="space-y-6">
-          {/* Header: nazwa + score */}
-          <div className="bg-bg-panel border border-bg-border rounded-xl p-8 flex items-start justify-between gap-6">
-            <div>
-              <h2 className="text-3xl font-light mb-2">{result.company.nazwa}</h2>
-              <p className="text-text-muted">
-                NIP {result.company.nip} · {result.company.adres}
-              </p>
-            </div>
-            <div className="text-right shrink-0">
-              <div className={`text-7xl font-light ${scoreColor(result.analysis.ai_score)}`}>
-                {result.analysis.ai_score}
-              </div>
-              <p className="text-text-muted text-sm">/ 10</p>
-            </div>
-          </div>
-
-          {/* Uzasadnienie */}
-          <div className="bg-bg-panel border border-bg-border rounded-xl p-8">
-            <h3 className="text-text-muted text-sm uppercase tracking-wider mb-3">
-              Uzasadnienie scoringu
-            </h3>
-            <p className="leading-relaxed">{result.analysis.score_justification}</p>
-          </div>
-
-          {/* Dane firmy + Profil branżowy */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-bg-panel border border-bg-border rounded-xl p-8">
-              <h3 className="text-text-muted text-sm uppercase tracking-wider mb-4">
-                Dane firmy
-              </h3>
-              <dl className="space-y-2 text-sm">
-                <div className="flex justify-between gap-4">
-                  <dt className="text-text-muted">REGON</dt>
-                  <dd>{result.company.regon}</dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-text-muted">KRS</dt>
-                  <dd>{result.company.krs}</dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-text-muted">Forma prawna</dt>
-                  <dd>{result.company.forma_prawna}</dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-text-muted">PKD</dt>
-                  <dd className="text-right">{result.company.pkd}</dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-text-muted">Kapitał zakł.</dt>
-                  <dd>{result.company.kapital_zakladowy.toLocaleString('pl-PL')} PLN</dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-text-muted">Rejestracja</dt>
-                  <dd>{result.company.data_rejestracji}</dd>
-                </div>
-              </dl>
-            </div>
-
-            <div className="bg-bg-panel border border-bg-border rounded-xl p-8">
-              <h3 className="text-text-muted text-sm uppercase tracking-wider mb-4">
-                Profil branżowy
-              </h3>
-              <dl className="space-y-3 text-sm">
-                <div>
-                  <dt className="text-text-muted mb-1">Kategoria</dt>
-                  <dd>{result.analysis.industry_profile.category}</dd>
-                </div>
-                <div>
-                  <dt className="text-text-muted mb-1">Typ działalności</dt>
-                  <dd>{result.analysis.industry_profile.b2b_b2c}</dd>
-                </div>
-                <div>
-                  <dt className="text-text-muted mb-1">Sezonowość</dt>
-                  <dd>{result.analysis.industry_profile.seasonality}</dd>
-                </div>
-              </dl>
-            </div>
-          </div>
-
-          {/* Budżety */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-bg-panel border border-bg-border rounded-xl p-8">
-              <h3 className="text-text-muted text-sm uppercase tracking-wider mb-2">
-                Budżet marketingowy
-              </h3>
-              <p className="text-2xl font-light">
-                {result.analysis.estimated_marketing_budget}
-              </p>
-            </div>
-            <div className="bg-bg-panel border border-bg-border rounded-xl p-8">
-              <h3 className="text-text-muted text-sm uppercase tracking-wider mb-2">
-                Budżet giftingowy
-              </h3>
-              <p className="text-2xl font-light text-accent">
-                {result.analysis.estimated_gifting_budget}
-              </p>
-            </div>
-          </div>
-
-          {/* Okazje */}
-          <div className="bg-bg-panel border border-bg-border rounded-xl p-8">
-            <h3 className="text-text-muted text-sm uppercase tracking-wider mb-4">
-              Okazje giftingowe
-            </h3>
-            <ul className="space-y-3">
-              {result.analysis.gifting_opportunities.map((opp, i) => (
-                <li key={i} className="border-l-2 border-accent pl-4">
-                  <p className="font-medium">{opp.type}</p>
-                  <p className="text-text-muted text-sm mt-1">{opp.reason}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Rekomendacja */}
-          <div className="bg-bg-panel border border-bg-border rounded-xl p-8">
-            <h3 className="text-text-muted text-sm uppercase tracking-wider mb-4">
-              Rekomendacja giftingu
-            </h3>
-            <div className="space-y-4">
-              <div className="flex flex-wrap gap-2">
-                {result.analysis.gifting_recommendation.brands.map((brand) => (
-                  <span
-                    key={brand}
-                    className="bg-accent/20 text-accent px-3 py-1 rounded-full text-sm"
-                  >
-                    {brand}
-                  </span>
-                ))}
-              </div>
-              <p className="text-sm leading-relaxed">
-                {result.analysis.gifting_recommendation.brand_justification}
-              </p>
-              <div className="grid grid-cols-2 gap-4 text-sm pt-2">
-                <div>
-                  <span className="text-text-muted">Budżet per osoba:</span>{' '}
-                  <span>{result.analysis.gifting_recommendation.budget_per_person}</span>
-                </div>
-                <div>
-                  <span className="text-text-muted">Skala:</span>{' '}
-                  <span>{result.analysis.gifting_recommendation.estimated_quantities}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Kogo szukać */}
-          <div className="bg-bg-panel border border-bg-border rounded-xl p-8">
-            <h3 className="text-text-muted text-sm uppercase tracking-wider mb-4">
-              Kogo szukać
-            </h3>
-            <div className="grid sm:grid-cols-2 gap-3">
-              {result.analysis.recommended_contacts.map((c, i) => (
-                <div key={i} className="bg-bg-dark border border-bg-border rounded-lg p-4">
-                  <p className="font-medium">{c.role}</p>
-                  <p className="text-text-muted text-sm">{c.department}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Elevator pitch */}
-          <div className="bg-gradient-to-br from-accent/20 to-bg-panel border border-accent/40 rounded-xl p-8">
-            <h3 className="text-accent text-sm uppercase tracking-wider mb-3">
-              Elevator pitch
-            </h3>
-            <p className="leading-relaxed">{result.analysis.elevator_pitch}</p>
-          </div>
-        </div>
-      )}
+      {result && <AnalysisCard company={result.company} analysis={result.analysis} />}
     </div>
   );
 }

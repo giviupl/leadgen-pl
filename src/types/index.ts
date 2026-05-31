@@ -54,3 +54,37 @@ export type AnalysisResponse = {
   company: CompanyData;
   analysis: AiAnalysis;
 };
+
+export type CompanyRow = {
+  id: string;
+  nip: string;
+  name: string | null;
+  krs_number: string | null;
+  address: string | null;
+  pkd: string | null;
+  pkd_description: string | null;
+  registration_date: string | null;
+  share_capital: number | null;
+  legal_form: string | null;
+  board_members: Array<{ imie: string; nazwisko: string; stanowisko: string }> | null;
+  website: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AiReportRow = {
+  id: string;
+  company_id: string;
+  ai_score: number;
+  ai_report: string;
+  industry_profile: IndustryProfile;
+  estimated_marketing_budget: string;
+  estimated_gifting_budget: string;
+  gifting_opportunities: GiftingOpportunity[];
+  gifting_recommendation: GiftingRecommendation;
+  recommended_contacts: RecommendedContact[];
+  elevator_pitch: string;
+  llm_provider: string;
+  llm_model: string;
+  generated_at: string;
+};
