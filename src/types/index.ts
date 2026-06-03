@@ -89,3 +89,18 @@ export type AiReportRow = {
   llm_model: string;
   generated_at: string;
 };
+
+export type RadarLeadRow = {
+  id: string;
+  company_id: string | null;
+  company_name_raw: string;
+  signal_type: string;
+  signal_summary: string | null;
+  signal_source_url: string | null;
+  signal_source_type: string | null;
+  ai_score: number;
+  elevator_pitch: string | null;
+  signal_detected_at: string;
+  is_enriched: boolean;
+  created_at: string;
+};

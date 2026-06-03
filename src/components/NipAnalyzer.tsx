@@ -1,15 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import type { AnalysisResponse } from '@/types';
-import { AnalysisCard } from './AnalysisCard';
+import { useRouter } from 'next/navigation';
 import { AnalysisProgress, type AnalysisStage } from './AnalysisProgress';
 
 export function NipAnalyzer() {
+  const router = useRouter();
   const [nip, setNip] = useState('');
   const [loading, setLoading] = useState(false);
   const [stage, setStage] = useState<AnalysisStage>('idle');
-  const [result, setResult] = useState<AnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -20,47 +19,46 @@ export function NipAnalyzer() {
       return;
     }
 
+    const cleanNip = nip.trim();
     setLoading(true);
     setError(null);
-    setResult(null);
 
     try {
-      // Etap 1: pobieram dane firmy — minimalny 1s żeby było widoczne
       setStage('data');
-      const fetchPromise = fetch(process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL!, {
+      const fetchPromise = fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nip: nip.trim() }),
+        body: JSON.stringify({ nip: cleanNip }),
       });
       await sleep(1000);
 
-      // Etap 2: analizuję AI — REALNIE czekamy na response z backendu
       setStage('ai');
       const response = await fetchPromise;
-      if (!response.ok) throw new Error(`Błąd: ${response.status}`);
-      const data: AnalysisResponse = await response.json();
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Błąd: ${response.status}`);
+      }
+      await response.json();
 
-      // Etap 3: zapisuję raport — pokazuję chwilę przed wynikiem
       setStage('save');
       await sleep(700);
 
-      // Etap 4: gotowe — krótki check
       setStage('done');
       await sleep(500);
 
-      setResult(data);
+      // Redirect do /firma/[nip] — strona Server Component czyta świeży zapis z bazy
+      const normalizedNip = cleanNip.replace(/\D/g, '');
+      router.push(`/firma/${normalizedNip}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Nieznany błąd');
-    } finally {
       setLoading(false);
       setStage('idle');
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
-      {/* Formularz */}
-      <div className="bg-bg-panel border border-bg-border rounded-xl p-8 mb-8">
+    <div className="max-w-4xl mx-auto px-4 pt-8 pb-12">
+      <div className="bg-bg-panel border border-bg-border rounded-xl p-6 mb-6">
         <label className="block text-text-muted text-sm mb-2">
           NIP firmy do analizy
         </label>
@@ -85,11 +83,7 @@ export function NipAnalyzer() {
         {error && <p className="text-danger text-sm mt-3">{error}</p>}
       </div>
 
-      {/* Progress podczas analizy */}
       {loading && <AnalysisProgress currentStage={stage} />}
-
-      {/* Wynik */}
-      {result && !loading && <AnalysisCard company={result.company} analysis={result.analysis} />}
     </div>
   );
 }

@@ -1,5 +1,10 @@
+export const revalidate = 60;
+
 import Link from 'next/link';
 import { NipAnalyzer } from '@/components/NipAnalyzer';
+import { RadarFeed } from '@/components/RadarFeed';
+
+export const dynamic = 'force-dynamic';
 
 export default function Home() {
   return (
@@ -22,7 +27,9 @@ export default function Home() {
           </Link>
         </div>
       </header>
+
       <NipAnalyzer />
+      <RadarFeed />
     </main>
   );
 }
