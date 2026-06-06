@@ -3,31 +3,32 @@ import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 
 export const runtime = 'nodejs';
+export const maxDuration = 120; // Vercel: max 120s dla tej route
 
-// --- Upstash setup (singleton, deduplikacja przy hot-reload w dev) ---
+// --- Upstash setup ---
 const redis = Redis.fromEnv();
 
 const ipRateLimit = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(10, '1 d'),
-  prefix: 'leadgen:ip',
+  limiter: Ratelimit.slidingWindow(5, '1 d'),   // 5/dzień per IP (find-contacts pali ~5 Serper credits)
+  prefix: 'leadgen:find:ip',
   analytics: true,
 });
 
 const globalRateLimit = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(500, '1 d'),
-  prefix: 'leadgen:global',
+  limiter: Ratelimit.slidingWindow(200, '1 d'), // 200/dzień globalnie (~1000 credits Serper / 2500 mies)
+  prefix: 'leadgen:find:global',
   analytics: true,
 });
 
 export async function POST(request: NextRequest) {
   try {
-    // --- 1. Walidacja konfiguracji serwera ---
-    const webhookUrl = process.env.N8N_WEBHOOK_URL;
+    // --- 1. Walidacja konfiguracji ---
+    const webhookUrl = process.env.N8N_FIND_CONTACTS_URL;
     const webhookSecret = process.env.N8N_WEBHOOK_SECRET;
     if (!webhookUrl || !webhookSecret) {
-      console.error('[analyze] Missing N8N_WEBHOOK_URL or N8N_WEBHOOK_SECRET');
+      console.error('[find-contacts] Missing N8N_FIND_CONTACTS_URL or N8N_WEBHOOK_SECRET');
       return NextResponse.json(
         { error: 'Serwer źle skonfigurowany' },
         { status: 500 }
@@ -37,28 +38,21 @@ export async function POST(request: NextRequest) {
     // --- 2. Parse + walidacja NIP ---
     const body = await request.json().catch(() => null);
     if (!body?.nip || typeof body.nip !== 'string') {
-      return NextResponse.json(
-        { error: 'NIP jest wymagany' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'NIP jest wymagany' }, { status: 400 });
     }
 
-    // Normalizacja: usuń spacje, myślniki, kropki — zostaw same cyfry
     const nip = body.nip.replace(/\D/g, '');
     if (!/^\d{10}$/.test(nip)) {
-      return NextResponse.json(
-        { error: 'NIP musi mieć 10 cyfr' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'NIP musi mieć 10 cyfr' }, { status: 400 });
     }
 
-    // --- 3. Identyfikacja klienta (Vercel ustawia x-forwarded-for) ---
+    // --- 3. Identyfikacja klienta ---
     const ip =
       request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       request.headers.get('x-real-ip') ||
       'unknown';
 
-    // --- 4. Rate limit per IP (10/dzień) — skip w dev dla localhost ---
+    // --- 4. Rate limit per IP (5/dzień) — skip w dev dla localhost ---
     const isDevLocalhost =
       process.env.NODE_ENV === 'development' &&
       (ip === '::1' || ip === '127.0.0.1' || ip === 'unknown');
@@ -75,7 +69,7 @@ export async function POST(request: NextRequest) {
         const resetIn = Math.ceil((r.reset - Date.now()) / 1000 / 60 / 60);
         return NextResponse.json(
           {
-            error: `Przekroczyłeś dzienny limit 10 analiz. Spróbuj ponownie za ~${resetIn}h.`,
+            error: `Przekroczyłeś dzienny limit 5 wyszukiwań. Spróbuj ponownie za ~${resetIn}h.`,
             retryAfter: r.reset,
           },
           { status: 429 }
@@ -84,18 +78,18 @@ export async function POST(request: NextRequest) {
       ipResult = { limit: r.limit, remaining: r.remaining, reset: r.reset };
     }
 
-    // --- 5. Rate limit globalny (500/dzień — bezpiecznik na quota Gemini) ---
+    // --- 5. Rate limit globalny ---
     const globalResult = await globalRateLimit.limit('all');
     if (!globalResult.success) {
       return NextResponse.json(
-        { error: 'Dzienny limit globalny serwisu wyczerpany. Wróć jutro.' },
+        { error: 'Dzienny limit globalny wyczerpany. Wróć jutro.' },
         { status: 503 }
       );
     }
 
-    // --- 6. Wywołanie n8n webhook z sekretnym headerem (timeout 60s) ---
+    // --- 6. Wywołanie n8n (timeout 115s — Gemini z thinking mode trwa do 90s) ---
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 60_000);
+    const timeout = setTimeout(() => controller.abort(), 115_000);
 
     let n8nResponse: Response;
     try {
@@ -105,7 +99,7 @@ export async function POST(request: NextRequest) {
           'Content-Type': 'application/json',
           'X-LeadGen-Secret': webhookSecret,
         },
-        body: JSON.stringify({ nip }),
+        body: JSON.stringify({ nip, force_refresh: body.force_refresh === true }),
         signal: controller.signal,
       });
     } finally {
@@ -113,16 +107,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (!n8nResponse.ok) {
-      // 4xx z n8n = legit business error (np. 404 NIP not found) — propaguj body+status do frontu
-      if (n8nResponse.status >= 400 && n8nResponse.status < 500) {
-        const data = await n8nResponse.json().catch(() => ({ error: 'Błąd analizy' }));
-        return NextResponse.json(data, { status: n8nResponse.status });
-      }
-      // 5xx z n8n = problem po naszej stronie — wrap jako 502
       const text = await n8nResponse.text().catch(() => '');
-      console.error(`[analyze] n8n failed ${n8nResponse.status}:`, text.slice(0, 500));
+      console.error(`[find-contacts] n8n failed ${n8nResponse.status}:`, text.slice(0, 500));
       return NextResponse.json(
-        { error: `Błąd analizy (status ${n8nResponse.status})` },
+        { error: `Błąd wyszukiwania (status ${n8nResponse.status})` },
         { status: 502 }
       );
     }
@@ -135,10 +123,10 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
-    console.error('[analyze] error:', err);
+    console.error('[find-contacts] error:', err);
     const message =
       err instanceof Error && err.name === 'AbortError'
-        ? 'Analiza przekroczyła limit czasu (60s). Spróbuj ponownie.'
+        ? 'Wyszukiwanie kontaktów przekroczyło limit czasu (115s). Spróbuj ponownie.'
         : 'Wewnętrzny błąd serwera';
     return NextResponse.json({ error: message }, { status: 500 });
   }

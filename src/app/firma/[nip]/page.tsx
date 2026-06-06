@@ -4,7 +4,8 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { supabaseServer } from '@/lib/supabase-server';
 import { AnalysisCard } from '@/components/AnalysisCard';
-import type { CompanyRow, AiReportRow, CompanyData } from '@/types';
+import { FindContactsSection } from '@/components/FindContactsSection';
+import type { CompanyRow, AiReportRow, CompanyData, CompanyContactsRow } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,22 +30,29 @@ export default async function FirmaPage({ params }: { params: Promise<{ nip: str
   const latestReport = reportsList[0];
   const olderReports = reportsList.slice(1);
 
+const { data: contacts } = await supabaseServer
+  .from('company_contacts')
+  .select('persons, linkedin_search_urls, scraped_at')
+  .eq('company_id', company.id)
+  .maybeSingle<CompanyContactsRow>();
+
   // Adapter: row z bazy → shape oczekiwany przez AnalysisCard
-  const companyForCard: CompanyData = {
-    nip: company.nip,
-    regon: '—',
-    krs: company.krs_number ?? '—',
-    nazwa: company.name ?? 'Bez nazwy',
-    adres: company.address ?? '—',
-    wojewodztwo: '—',
-    pkd: company.pkd ?? '—',
-    pkd_opis: company.pkd_description ?? '—',
-    forma_prawna: company.legal_form ?? '—',
-    data_rejestracji: company.registration_date ?? '—',
-    kapital_zakladowy: company.share_capital ?? 0,
-    zarzad: company.board_members ?? [],
-    source: 'database',
-  };
+const companyForCard: CompanyData = {
+  nip: company.nip,
+  regon: company.regon ?? '—',
+  krs: company.krs_number ?? '—',
+  nazwa: company.name ?? 'Bez nazwy',
+  adres: company.address ?? '—',
+  wojewodztwo: '—',  // BIR nie zwraca województwa osobno
+  pkd: company.pkd ?? '—',
+  pkd_opis: company.pkd_description ?? '—',
+  forma_prawna: company.legal_form ?? '—',
+  data_rejestracji: company.registration_date ?? '—',
+  kapital_zakladowy: company.share_capital ?? 0,
+  zarzad: company.board_members ?? [],
+  vat_eu_active: company.vat_eu_active ?? null,
+  source: 'database',
+};
 
   const scoreColor = (score: number) => {
     if (score >= 7) return 'text-success';
@@ -71,6 +79,12 @@ export default async function FirmaPage({ params }: { params: Promise<{ nip: str
             recommended_contacts: latestReport.recommended_contacts,
             elevator_pitch: latestReport.elevator_pitch,
           }} />
+
+<FindContactsSection
+  nip={nip}
+  companyName={company.name ?? 'Bez nazwy'}
+  initialContacts={contacts}
+/>
 
           {olderReports.length > 0 && (
             <div className="mt-12">

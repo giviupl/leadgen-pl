@@ -104,3 +104,40 @@ export type RadarLeadRow = {
   is_enriched: boolean;
   created_at: string;
 };
+
+// --- Find Contacts ---
+export type PersonFunction = 'marketing' | 'hr' | 'comms' | 'office' | 'procurement' | 'other';
+export type PersonSeniority = 'director' | 'manager' | 'specialist' | 'other';
+
+export interface Person {
+  name: string;
+  linkedin_url: string;
+  current_role: string;
+  current_company: string;
+  function: PersonFunction;
+  seniority: PersonSeniority;
+  is_pl_based: boolean;
+  location_city: string | null;
+  tenure_months: number | null;
+  tenure_text: string | null;
+  previous_companies: string[];
+  profile_snippet: string;
+  confidence: number;
+  found_by_query: string;
+  found_at: string;
+}
+
+export interface QueryAudit {
+  query: string;
+  role_function: string;
+  role_seniority: string;
+  results_count: number;
+  kept_unique: number;
+  executed_at: string;
+}
+
+export interface CompanyContactsRow {
+  persons: Person[];
+  linkedin_search_urls: QueryAudit[];
+  scraped_at: string | null;
+}
