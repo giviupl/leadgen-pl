@@ -56,9 +56,16 @@ export type AnalysisResponse = {
   analysis: AiAnalysis;
 };
 
-export type CompanyRow = {
+export interface BoardMember {
+  imie: string;
+  nazwisko: string;
+  stanowisko: string;
+}
+
+export interface CompanyRow {
   id: string;
   nip: string;
+  regon: string | null;            // ← brakuje
   name: string | null;
   krs_number: string | null;
   address: string | null;
@@ -67,11 +74,13 @@ export type CompanyRow = {
   registration_date: string | null;
   share_capital: number | null;
   legal_form: string | null;
-  board_members: Array<{ imie: string; nazwisko: string; stanowisko: string }> | null;
-  website: string | null;
-  created_at: string;
-  updated_at: string;
-};
+  board_members: BoardMember[] | null;
+  vat_eu_active: boolean | null;
+  krs_fetched_at: string | null;
+  vies_fetched_at: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
 
 export type AiReportRow = {
   id: string;
