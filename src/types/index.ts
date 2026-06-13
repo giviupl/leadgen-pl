@@ -112,6 +112,7 @@ export type RadarLeadRow = {
   signal_detected_at: string;
   is_enriched: boolean;
   created_at: string;
+  company?: { nip: string } | null;	
 };
 
 // --- Find Contacts ---

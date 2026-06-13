@@ -19,11 +19,11 @@ function dateGroupLabel(isoDate: string): string {
 }
 
 export async function RadarFeed() {
-  const { data: leads } = await supabaseServer
-    .from('radar_leads')
-    .select('*')
-    .order('signal_detected_at', { ascending: false })
-    .limit(50);
+const { data: leads } = await supabaseServer
+  .from('radar_leads')
+  .select('*, company:companies(nip)')
+  .order('signal_detected_at', { ascending: false })
+  .limit(50);
 
   const leadList = (leads as RadarLeadRow[] ?? []);
 

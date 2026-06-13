@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { RadarLeadRow } from '@/types';
+import { AnalyzeButton } from './AnalyzeButton';
 
 const SIGNAL_LABELS: Record<string, { label: string; icon: string }> = {
   new_market_entry: { label: 'Wejście na rynek', icon: '🌍' },
@@ -54,14 +55,16 @@ export function RadarCard({ lead }: { lead: RadarLeadRow }) {
 
       <div className="flex items-center gap-4 text-xs text-text-muted">
 {lead.signal_source_url ? <a href={lead.signal_source_url} target="_blank" rel="noopener noreferrer" className="hover:text-accent transition">Źródło →</a> : null}
-        {lead.company_id && (
-          <Link
-            href={`/firma/${lead.company_id}`}
-            className="hover:text-accent transition"
-          >
-            Pełna analiza →
-          </Link>
-        )}
+{lead.company_id && lead.company?.nip ? (
+  <Link
+    href={`/firma/${lead.company.nip}`}
+    className="hover:text-accent transition"
+  >
+    Pełna analiza →
+  </Link>
+) : (
+  <AnalyzeButton leadId={lead.id} companyName={lead.company_name_raw} />
+)}
         <span className="ml-auto">
           {new Date(lead.signal_detected_at).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}
         </span>
