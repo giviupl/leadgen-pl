@@ -146,8 +146,15 @@ export interface QueryAudit {
   executed_at: string;
 }
 
+export interface RejectedPerson {
+  name: string;
+  linkedin_url: string;
+  reason: string;
+}
+
 export interface CompanyContactsRow {
   persons: Person[];
   linkedin_search_urls: QueryAudit[];
   scraped_at: string | null;
+  rejected?: RejectedPerson[];  // ← NOWE
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { Person, CompanyContactsRow, PersonFunction } from '@/types';
+import type { Person, CompanyContactsRow, PersonFunction, QueryAudit, RejectedPerson } from '@/types';
 
 interface Props {
   nip: string;
@@ -74,7 +74,8 @@ export function FindContactsSection({ nip, companyName, initialContacts }: Props
       if (!res.ok) throw new Error(data.error ?? 'Wystąpił błąd');
       setContacts({
         persons: data.persons ?? [],
-        linkedin_search_urls: [],
+        linkedin_search_urls: data.linkedin_search_urls ?? data.queries_audit ?? [],
+        rejected: data.rejected ?? [],
         scraped_at: data.scraped_at,
       });
     } catch (e) {
@@ -113,22 +114,15 @@ export function FindContactsSection({ nip, companyName, initialContacts }: Props
         </div>
       </div>
 
-      {/* Empty state */}
+      {/* Empty state — różne warianty zależnie od historii */}
       {persons.length === 0 && !loading && (
-        <div className="text-center py-8">
-          <p className="text-text-muted text-sm mb-4">
-            Brak zapisanych kontaktów dla tej firmy.
-          </p>
-          <button
-            onClick={() => handleFind(false)}
-            className="bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 px-6 py-2 rounded-lg text-sm font-medium transition-colors"
-          >
-            Znajdź kontakty
-          </button>
-          <p className="text-text-muted text-xs mt-3">
-            Wyszukiwanie zajmuje ~30 sekund · 5 zapytań do LinkedIn + analiza AI
-          </p>
-        </div>
+        <EmptyState
+          companyName={companyName}
+          scrapedAt={scrapedAt}
+          queries={contacts?.linkedin_search_urls ?? []}
+          rejected={contacts?.rejected ?? []}
+          onFind={() => handleFind(false)}
+        />
       )}
 
       {/* Loading state */}
@@ -192,6 +186,122 @@ export function FindContactsSection({ nip, companyName, initialContacts }: Props
         </div>
       )}
     </section>
+  );
+}
+
+function EmptyState({
+  companyName,
+  scrapedAt,
+  queries,
+  rejected,
+  onFind,
+}: {
+  companyName: string;
+  scrapedAt: string | null | undefined;
+  queries: QueryAudit[];
+  rejected: RejectedPerson[];
+  onFind: () => void;
+}) {
+  const wasSearched = scrapedAt != null && queries.length > 0;
+  const linkedinSearchUrl = `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(companyName)}`;
+
+  // Wariant 1: nigdy nie szukano
+  if (!wasSearched) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-text-muted text-sm mb-4">
+          Brak zapisanych kontaktów dla tej firmy.
+        </p>
+        <button
+          onClick={onFind}
+          className="bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 px-6 py-2 rounded-lg text-sm font-medium transition-colors"
+        >
+          Znajdź kontakty
+        </button>
+        <p className="text-text-muted text-xs mt-3">
+          Wyszukiwanie zajmuje ~30 sekund · 5 zapytań do LinkedIn + analiza AI
+        </p>
+      </div>
+    );
+  }
+
+  // Wariant 2: szukano, ale 0 wyników po filtrowaniu
+  const queriesWithResults = queries.filter(q => q.results_count > 0);
+
+  return (
+    <div className="space-y-5">
+      <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+        <p className="text-amber-200 text-sm font-medium mb-1">
+          Nie znaleziono aktywnych kontaktów
+        </p>
+        <p className="text-text-muted text-xs">
+          AI sprawdziła {queries.length} ról, znaleziono {queriesWithResults.length} {queriesWithResults.length === 1 ? 'profil' : 'profili'} — {queriesWithResults.length === 0 ? 'wyniki są puste' : 'wszystkie odrzucone (byli pracownicy lub osoby z innych firm)'}.
+          Możliwe że firma nie ma publicznych profili na LinkedIn.
+        </p>
+      </div>
+
+      {/* Audit queries */}
+      <div>
+        <h4 className="text-text-muted text-xs uppercase tracking-wider mb-2">
+          Sprawdzone role
+        </h4>
+        <ul className="space-y-1 text-xs">
+          {queries.map((q, i) => (
+            <li key={i} className="flex items-center gap-2 text-text-muted">
+              <span className={q.results_count > 0 ? 'text-amber-400' : 'text-text-muted/50'}>
+                {q.results_count > 0 ? '✓' : '–'}
+              </span>
+              <span className="capitalize">{q.role_function}</span>
+              {q.results_count > 0 ? (
+                <span className="text-text-muted/70">
+                  ({q.results_count} {q.results_count === 1 ? 'wynik' : 'wyniki'}, odrzucone)
+                </span>
+              ) : (
+                <span className="text-text-muted/50">brak wyników</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Rejected details */}
+      {rejected.length > 0 && (
+        <div>
+          <h4 className="text-text-muted text-xs uppercase tracking-wider mb-2">
+            Odrzucone profile ({rejected.length})
+          </h4>
+          <ul className="space-y-1 text-xs text-text-muted">
+            {rejected.map((r, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <span className="text-text-muted/50">×</span>
+                <span>
+                  <span className="text-text-main">{r.name}</span>
+                  <span className="text-text-muted/70"> — {r.reason}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* CTA */}
+      <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-bg-border">
+        <a
+          href={linkedinSearchUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 rounded-lg transition-colors text-center"
+        >
+          Szukaj ręcznie na LinkedIn ↗
+        </a>
+        <button
+          onClick={onFind}
+          className="text-sm px-4 py-2 bg-bg-panel hover:bg-bg-border text-text-muted hover:text-text-main border border-bg-border rounded-lg transition-colors"
+        >
+          Spróbuj jeszcze raz
+        </button>
+      </div>
+    </div>
   );
 }
 

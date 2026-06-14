@@ -32,7 +32,7 @@ export default async function FirmaPage({ params }: { params: Promise<{ nip: str
 
 const { data: contacts } = await supabaseServer
   .from('company_contacts')
-  .select('persons, linkedin_search_urls, scraped_at')
+  .select('persons, linkedin_search_urls, scraped_at, rejected')
   .eq('company_id', company.id)
   .maybeSingle<CompanyContactsRow>();
 
