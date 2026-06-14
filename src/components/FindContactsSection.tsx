@@ -203,7 +203,11 @@ function EmptyState({
   onFind: () => void;
 }) {
   const wasSearched = scrapedAt != null && queries.length > 0;
-  const linkedinSearchUrl = `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(companyName)}`;
+  const cleanCompanyName = companyName
+  .replace(/\s+(SPÓŁKA AKCYJNA|S\.A\.|SP\. Z O\.O\.|SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ|SP\. Z OO|SP Z OO)$/i, '')
+  .trim();
+
+const linkedinSearchUrl = `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(cleanCompanyName)}`;
 
   // Wariant 1: nigdy nie szukano
   if (!wasSearched) {
