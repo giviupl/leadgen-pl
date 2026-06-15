@@ -77,6 +77,7 @@ export interface CompanyRow {
   legal_form: string | null;
   board_members: BoardMember[] | null;
   vat_eu_active: boolean | null;
+  website: string | null;
   krs_fetched_at: string | null;
   vies_fetched_at: string | null;
   created_at?: string;
