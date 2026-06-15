@@ -13,6 +13,8 @@ export function AnalysisCard({
     return 'text-danger';
   };
 
+  const displayDomain = (url: string) => url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+
   return (
     <div className="space-y-6">
       <div className="bg-bg-panel border border-bg-border rounded-xl p-8 flex items-start justify-between gap-6">
@@ -21,6 +23,25 @@ export function AnalysisCard({
           <p className="text-text-muted">
             NIP {company.nip} · {company.adres}
           </p>
+          {company.website ? (
+            <a
+              href={company.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 hover:underline mt-2"
+            >
+              {displayDomain(company.website)} ↗
+            </a>
+          ) : (
+            <a
+              href={`https://www.google.com/search?q=${encodeURIComponent(company.nazwa + ' oficjalna strona')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 hover:underline mt-2"
+            >
+              Szukaj strony w Google ↗
+            </a>
+          )}
         </div>
         <div className="text-right shrink-0">
           <div className={`text-7xl font-light ${scoreColor(analysis.ai_score)}`}>
@@ -111,18 +132,6 @@ export function AnalysisCard({
             <div><span className="text-text-muted">Budżet per osoba:</span> <span>{analysis.gifting_recommendation.budget_per_person}</span></div>
             <div><span className="text-text-muted">Skala:</span> <span>{analysis.gifting_recommendation.estimated_quantities}</span></div>
           </div>
-        </div>
-      </div>
-
-      <div className="bg-bg-panel border border-bg-border rounded-xl p-8">
-        <h3 className="text-text-muted text-sm uppercase tracking-wider mb-4">Kogo szukać</h3>
-        <div className="grid sm:grid-cols-2 gap-3">
-          {analysis.recommended_contacts.map((c, i) => (
-            <div key={i} className="bg-bg-dark border border-bg-border rounded-lg p-4">
-              <p className="font-medium">{c.role}</p>
-              <p className="text-text-muted text-sm">{c.department}</p>
-            </div>
-          ))}
         </div>
       </div>
 

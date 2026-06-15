@@ -13,6 +13,7 @@ export type CompanyData = {
   zarzad: Array<{ imie: string; nazwisko: string; stanowisko: string }>;
   source: string;
   vat_eu_active?: boolean;  // ← NOWE
+  website?: string | null;
 };
 
 export type IndustryProfile = {
@@ -157,4 +158,5 @@ export interface CompanyContactsRow {
   linkedin_search_urls: QueryAudit[];
   scraped_at: string | null;
   rejected?: RejectedPerson[];  // ← NOWE
+  website?: string | null;
 }

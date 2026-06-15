@@ -51,6 +51,7 @@ const companyForCard: CompanyData = {
   kapital_zakladowy: company.share_capital ?? 0,
   zarzad: company.board_members ?? [],
   vat_eu_active: company.vat_eu_active ?? undefined,
+  website: company.website ?? null,
   source: 'database',
 };
 
