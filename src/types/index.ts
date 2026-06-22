@@ -161,3 +161,20 @@ export interface CompanyContactsRow {
   rejected?: RejectedPerson[];  // ← NOWE
   website?: string | null;
 }
+
+export type DiscoveredCompany = {
+  id: string;
+  raw_name: string;
+  linkedin_url: string;
+  employees_range: string | null;
+  industry_raw: string | null;
+  hq_country: string | null;
+  has_pl_registration: boolean;
+  discovered_at: string;
+};
+
+export type DiscoverResponse = {
+  ok: boolean;
+  count: number;
+  companies: DiscoveredCompany[];
+};

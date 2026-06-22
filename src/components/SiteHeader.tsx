@@ -12,12 +12,20 @@ export function SiteHeader() {
             Analiza polskich firm pod kątem potencjału giftingowego B2B
           </p>
         </Link>
-        <Link
-          href="/historia"
-          className="text-text-muted hover:text-text-main text-sm transition"
-        >
-          Historia →
-        </Link>
+        <nav className="flex items-center gap-6">
+          <Link
+            href="/odkrycia"
+            className="text-text-muted hover:text-text-main text-sm transition"
+          >
+            Odkrycia →
+          </Link>
+          <Link
+            href="/historia"
+            className="text-text-muted hover:text-text-main text-sm transition"
+          >
+            Historia →
+          </Link>
+        </nav>
       </div>
     </header>
   );
