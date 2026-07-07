@@ -178,3 +178,52 @@ export type DiscoverResponse = {
   count: number;
   companies: DiscoveredCompany[];
 };
+
+// =================================================================
+// JOB OFFERS (find-job-offers pipeline)
+// =================================================================
+
+export type JobOfferStatus = 'new' | 'applied' | 'dismissed' | 'expired';
+export type JobOfferType = 'job_board' | 'company_site' | 'directory';
+export type JobOfferSource = 'html' | 'snippet' | 'job_board';
+export type JobOfferLanguage = 'pl' | 'en' | 'mixed';
+
+export interface JobOffer {
+  id: string;
+  url: string;
+  domain: string;
+  offer_type: JobOfferType;
+  source: JobOfferSource;
+  title: string | null;
+  company_name: string | null;
+  location: string | null;
+  language: JobOfferLanguage;
+  fit_score: number | null;
+  fit_reasoning: string | null;
+  key_skills: string[] | null;
+  red_flags: string[] | null;
+  description_excerpt: string | null;
+  status: JobOfferStatus;
+  notes: string | null;
+  source_query: string | null;
+  raw_gemini_response: unknown | null;
+  discovered_at: string;
+  applied_at: string | null;
+  updated_at: string;
+  cv_sent: boolean;
+}
+
+export interface JobsResponse {
+  offers: JobOffer[];
+  counts: {
+    all: number;
+    job_board: number;
+    company_site: number;
+    by_status: {
+      new: number;
+      applied: number;
+      dismissed: number;
+    };
+  };
+}
+
