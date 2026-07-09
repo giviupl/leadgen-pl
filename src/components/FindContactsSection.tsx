@@ -45,6 +45,7 @@ export function FindContactsSection({ nip, companyName, initialContacts }: Props
   const [showManagers, setShowManagers] = useState(false);
   const [showSpecialists, setShowSpecialists] = useState(false);
   const [showOthers, setShowOthers] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
   const persons = contacts?.persons ?? [];
   const scrapedAt = contacts?.scraped_at;
@@ -76,8 +77,9 @@ export function FindContactsSection({ nip, companyName, initialContacts }: Props
         persons: data.persons ?? [],
         linkedin_search_urls: data.linkedin_search_urls ?? data.queries_audit ?? [],
         rejected: data.rejected ?? [],
-        scraped_at: data.scraped_at,
+        scraped_at: data.scraped_at ?? new Date().toISOString(),
       });
+      setHasSearched(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Nieznany błąd');
     } finally {
@@ -121,6 +123,7 @@ export function FindContactsSection({ nip, companyName, initialContacts }: Props
           scrapedAt={scrapedAt}
           queries={contacts?.linkedin_search_urls ?? []}
           rejected={contacts?.rejected ?? []}
+          hasSearched={hasSearched}
           onFind={() => handleFind(false)}
         />
       )}
@@ -194,20 +197,22 @@ function EmptyState({
   scrapedAt,
   queries,
   rejected,
+  hasSearched,
   onFind,
 }: {
   companyName: string;
   scrapedAt: string | null | undefined;
   queries: QueryAudit[];
   rejected: RejectedPerson[];
+  hasSearched: boolean;
   onFind: () => void;
 }) {
-  const wasSearched = scrapedAt != null && queries.length > 0;
+  const wasSearched = hasSearched || (scrapedAt != null && queries.length > 0);
   const cleanCompanyName = companyName
-  .replace(/\s+(SPÓŁKA AKCYJNA|S\.A\.|SP\. Z O\.O\.|SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ|SP\. Z OO|SP Z OO)$/i, '')
-  .trim();
+    .replace(/\s+(SPÓŁKA AKCYJNA|S\.A\.|SP\. Z O\.O\.|SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ|SP\. Z OO|SP Z OO)$/i, '')
+    .trim();
 
-const linkedinSearchUrl = `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(cleanCompanyName)}`;
+  const linkedinSearchUrl = `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(cleanCompanyName)}`;
 
   // Wariant 1: nigdy nie szukano
   if (!wasSearched) {
@@ -245,28 +250,30 @@ const linkedinSearchUrl = `https://www.linkedin.com/search/results/people/?keywo
       </div>
 
       {/* Audit queries */}
-      <div>
-        <h4 className="text-text-muted text-xs uppercase tracking-wider mb-2">
-          Sprawdzone role
-        </h4>
-        <ul className="space-y-1 text-xs">
-          {queries.map((q, i) => (
-            <li key={i} className="flex items-center gap-2 text-text-muted">
-              <span className={q.results_count > 0 ? 'text-amber-400' : 'text-text-muted/50'}>
-                {q.results_count > 0 ? '✓' : '–'}
-              </span>
-              <span className="capitalize">{q.role_function}</span>
-              {q.results_count > 0 ? (
-                <span className="text-text-muted/70">
-                  ({q.results_count} {q.results_count === 1 ? 'wynik' : 'wyniki'}, odrzucone)
+      {queries.length > 0 && (
+        <div>
+          <h4 className="text-text-muted text-xs uppercase tracking-wider mb-2">
+            Sprawdzone role
+          </h4>
+          <ul className="space-y-1 text-xs">
+            {queries.map((q, i) => (
+              <li key={i} className="flex items-center gap-2 text-text-muted">
+                <span className={q.results_count > 0 ? 'text-amber-400' : 'text-text-muted/50'}>
+                  {q.results_count > 0 ? '✓' : '–'}
                 </span>
-              ) : (
-                <span className="text-text-muted/50">brak wyników</span>
-              )}
-            </li>
-          ))}
-        </ul>
-      </div>
+                <span className="capitalize">{q.role_function}</span>
+                {q.results_count > 0 ? (
+                  <span className="text-text-muted/70">
+                    ({q.results_count} {q.results_count === 1 ? 'wynik' : 'wyniki'}, odrzucone)
+                  </span>
+                ) : (
+                  <span className="text-text-muted/50">brak wyników</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Rejected details */}
       {rejected.length > 0 && (
